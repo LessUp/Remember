@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>记忆力训练 - 翻牌配对</title>
+  <script>
+    tailwind.config = { darkMode: 'class' }
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <style>
+    .card { perspective: 1000px; }
+    .card-inner { transform-style: preserve-3d; transition: transform .4s ease; }
+    .flipped .card-inner { transform: rotateY(180deg); }
+    .card-face { position: absolute; inset: 0; backface-visibility: hidden; display: flex; align-items: center; justify-content: center; }
+    .card-back { transform: rotateY(180deg); }
+    .card { transition: transform .15s ease; }
+    .card:hover { transform: translateY(-2px); }
+    @keyframes matchPulse { 0%{ transform: scale(1); } 50%{ transform: scale(1.04); } 100%{ transform: scale(1); } }
+    .match-pulse { animation: matchPulse .45s ease; }
+    .no-anim * { transition: none !important; animation: none !important; }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 text-slate-800 dark:from-slate-900 dark:to-slate-950 dark:text-slate-100">
+  <div class="max-w-5xl mx-auto p-4 sm:p-6">
+    <header class="mb-4 sm:mb-6">
+      <h1 class="text-2xl sm:text-3xl font-bold">记忆力训练 · 翻牌配对</h1>
+      <p class="text-slate-500 mt-1 text-sm">选择难度，开始翻牌配对训练记忆。完成后将记录你的最佳成绩。</p>
+    </header>
+
+    <section class="flex flex-col sm:flex-row sm:items-end gap-3 sm:gap-4 mb-4 sm:mb-6">
+      <div class="flex items-center gap-2">
+        <label for="difficulty" class="text-sm text-slate-600">难度</label>
+        <select id="difficulty" class="px-2 py-1.5 rounded-md border border-slate-300 bg-white text-sm">
+          <option value="easy">简单 4×4</option>
+          <option value="medium">中等 4×5</option>
+          <option value="hard">困难 6×6</option>
+        </select>
+      </div>
+  <!-- N-back Modal -->
+  <div id="nbackModal" class="fixed inset-0 hidden items-center justify-center bg-black/50 p-4">
+    <div class="w-full max-w-md rounded-2xl bg-white dark:bg-slate-800 shadow-lg p-6">
+      <h2 id="nbackTitle" class="text-lg font-semibold mb-2">N-back 训练</h2>
+      <div class="grid grid-cols-3 gap-2 text-sm mb-3">
+        <label class="flex items-center justify-between">
+          <span id="nbackNLabel" class="text-slate-700">N 值</span>
+          <select id="nbackNSelect" class="px-2 py-1 rounded-md border border-slate-300"><option value="1">1</option><option value="2">2</option><option value="3">3</option></select>
+        </label>
+        <label class="flex items-center justify-between">
+          <span id="nbackSpeedLabel" class="text-slate-700">节奏(ms)</span>
+          <select id="nbackSpeedSelect" class="px-2 py-1 rounded-md border border-slate-300"><option value="1200">1200</option><option value="900">900</option><option value="700">700</option></select>
+        </label>
+        <label class="flex items-center justify-between">
+          <span id="nbackLenLabel" class="text-slate-700">长度</span>
+          <select id="nbackLenSelect" class="px-2 py-1 rounded-md border border-slate-300"><option value="20">20</option><option value="30">30</option><option value="40">40</option></select>
+        </label>
+      </div>
+      <div class="mb-3 text-center">
+        <div id="nbackStim" class="inline-flex items-center justify-center w-24 h-24 rounded-xl bg-slate-100 text-3xl">—</div>
+      </div>
+      <p id="nbackHint" class="text-xs text-slate-500 mb-3">按 J 判定“与 N 步前相同”</p>
+      <div class="flex justify-end gap-3">
+        <button id="nbackClose" class="px-4 py-2 rounded-md border border-slate-300 text-slate-700 text-sm bg-white hover:bg-slate-50">关闭</button>
+        <button id="nbackStart" class="px-4 py-2 rounded-md bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700">开始</button>
+      </div>
+    </div>
+  </div>
+  <div id="dailyModal" class="fixed inset-0 hidden items-center justify-center bg-black/50 p-4">
+    <div class="w-full max-w-md rounded-2xl bg-white dark:bg-slate-800 shadow-lg p-6">
+      <h2 id="dailyTitle" class="text-lg font-semibold mb-2">每日挑战</h2>
+      <p id="dailyInfo" class="text-sm text-slate-600 dark:text-slate-300 mb-3"></p>
+      <div class="mt-2 flex justify-end gap-3">
+        <button id="dailyClose" class="px-4 py-2 rounded-md border border-slate-300 text-slate-700 text-sm bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700">关闭</button>
+        <button id="dailyStart" class="px-4 py-2 rounded-md bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700">开始挑战</button>
+      </div>
+    </div>
+  </div>
+      <div class="flex items-center gap-3">
+        <button id="newGameBtn" class="px-3 py-2 rounded-md bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 active:bg-indigo-800">开始/重开</button>
+        <button id="pauseBtn" class="px-3 py-2 rounded-md border border-slate-300 bg-white text-slate-700 text-sm hover:bg-slate-50">暂停</button>
+        <button id="hintBtn" class="px-3 py-2 rounded-md border border-slate-300 bg-white text-slate-700 text-sm hover:bg-slate-50">提示 <span id="hintLeft" class="ml-1">0</span></button>
+        <button id="settingsBtn" class="px-3 py-2 rounded-md border border-slate-300 bg-white text-slate-700 text-sm hover:bg-slate-50">设置</button>
+        <button id="achievementsBtn" class="px-3 py-2 rounded-md border border-slate-300 bg-white text-slate-700 text-sm hover:bg-slate-50">成就</button>
+        <button id="statsBtn" class="px-3 py-2 rounded-md border border-slate-300 bg-white text-slate-700 text-sm hover:bg-slate-50">统计</button>
+        <button id="dailyBtn" class="px-3 py-2 rounded-md border border-slate-300 bg-white text-slate-700 text-sm hover:bg-slate-50">每日</button>
+        <button id="nbackBtn" class="px-3 py-2 rounded-md border border-slate-300 bg-white text-slate-700 text-sm hover:bg-slate-50">N-back</button>
+      </div>
+      <div class="flex-1" ></div>
+      <div class="flex items-center gap-4 text-sm">
+        <div><span id="timeLabel">用时</span> <span id="time" class="font-semibold" role="status" aria-live="polite" aria-atomic="true">00:00</span></div>
+        <div><span id="movesLabel">步数</span> <span id="moves" class="font-semibold" role="status" aria-live="polite" aria-atomic="true">0</span></div>
+        <div class="text-slate-500 dark:text-slate-400"><span id="bestLabel">最佳</span> <span id="best" class="font-semibold text-slate-700 dark:text-slate-200">—</span></div>
+      </div>
+    </section>
+    <div class="mb-3">
+      <div class="flex items-center justify-between text-xs text-slate-500">
+        <span>进度</span><span><span id="pairsLeft">0</span> 对剩余</span>
+      </div>
+      <div class="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
+        <div id="progressBar" class="h-full bg-indigo-500" style="width:0%"></div>
+      </div>
+    </div>
+
+    <main>
+      <div id="grid" class="grid gap-3 sm:gap-4"></div>
+    </main>
+    <section class="mt-4 sm:mt-6">
+      <h3 class="text-sm font-semibold text-slate-600">排行榜（当前难度）</h3>
+      <ul id="leaderboardList" class="mt-2 text-sm text-slate-700 space-y-1"></ul>
+    </section>
+  </div>
+
+  <div id="winModal" class="fixed inset-0 hidden items-center justify-center bg-black/50 p-4">
+    <div class="w-full max-w-sm rounded-2xl bg-white dark:bg-slate-800 shadow-lg p-6">
+      <div class="text-center">
+        <div class="mx-auto mb-3 h-12 w-12 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-2xl">🎉</div>
+        <h2 id="winTitle" class="text-xl font-semibold mb-2">太棒了！全部配对完成</h2>
+        <div id="ratingStars" class="mb-1 text-lg"></div>
+        <p id="winStats" class="text-slate-600 dark:text-slate-300 mb-4 text-sm"></p>
+        <div class="flex items-center justify-center gap-3">
+          <button id="playAgain" class="px-4 py-2 rounded-md bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700">再来一局</button>
+          <button id="shareBtn" class="px-4 py-2 rounded-md bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700">分享战绩</button>
+          <button id="closeModal" class="px-4 py-2 rounded-md border border-slate-300 text-slate-700 dark:text-slate-200 text-sm bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700">返回</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="loseModal" class="fixed inset-0 hidden items-center justify-center bg-black/50 p-4">
+    <div class="w-full max-w-sm rounded-2xl bg-white dark:bg-slate-800 shadow-lg p-6">
+      <div class="text-center">
+        <div class="mx-auto mb-3 h-12 w-12 rounded-full bg-rose-100 text-rose-700 flex items-center justify-center text-2xl">⏳</div>
+        <h2 id="loseTitle" class="text-xl font-semibold mb-2">时间到，挑战失败</h2>
+        <p id="loseDesc" class="text-slate-600 dark:text-slate-300 mb-4 text-sm">可在设置中调整“限时时长”，或重试本局。</p>
+        <div class="flex items-center justify-center gap-3">
+          <button id="failRetry" class="px-4 py-2 rounded-md bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700">重试</button>
+          <button id="failClose" class="px-4 py-2 rounded-md border border-slate-300 text-slate-700 dark:text-slate-200 text-sm bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700">返回</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="pauseOverlay" class="fixed inset-0 hidden items-center justify-center bg-black/50 p-4">
+    <div class="w-full max-w-sm rounded-2xl bg-white dark:bg-slate-800 shadow-lg p-6 text-center">
+      <div class="mx-auto mb-3 h-12 w-12 rounded-full bg-yellow-100 text-yellow-700 flex items-center justify-center text-2xl">⏸️</div>
+      <h2 class="text-xl font-semibold mb-2">已暂停</h2>
+      <p class="text-slate-600 mb-4 text-sm">点击继续恢复游戏</p>
+      <button id="resumeBtn" class="px-4 py-2 rounded-md bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700">继续</button>
+    </div>
+  </div>
+
+  <div id="settingsModal" class="fixed inset-0 hidden items-center justify-center bg-black/50 p-4">
+    <div class="w-full max-w-md rounded-2xl bg-white dark:bg-slate-800 shadow-lg p-6">
+      <h2 class="text-lg font-semibold mb-4">设置</h2>
+      <div class="space-y-4">
+        <label class="flex items-center justify-between">
+          <span class="text-sm text-slate-700">声音</span>
+          <input id="settingSound" type="checkbox" class="h-4 w-4">
+        </label>
+        <label class="flex items-center justify-between">
+          <span class="text-sm text-slate-700">震动</span>
+          <input id="settingVibrate" type="checkbox" class="h-4 w-4">
+        </label>
+        <label class="flex items-center justify-between">
+          <span class="text-sm text-slate-700">开局预览秒数</span>
+          <input id="settingPreview" type="number" min="0" max="5" step="1" class="px-2 py-1 w-20 rounded-md border border-slate-300" />
+        </label>
+        <label class="flex items-center justify-between">
+          <span class="text-sm text-slate-700">主题色</span>
+          <select id="settingAccent" class="px-2 py-1 rounded-md border border-slate-300">
+            <option value="indigo">靛蓝</option>
+            <option value="emerald">翡翠绿</option>
+            <option value="rose">玫瑰红</option>
+          </select>
+        </label>
+        <label class="flex items-center justify-between">
+          <span class="text-sm text-slate-700">暗色模式</span>
+          <select id="settingTheme" class="px-2 py-1 rounded-md border border-slate-300">
+            <option value="auto">自动</option>
+            <option value="light">浅色</option>
+            <option value="dark">深色</option>
+          </select>
+        </label>
+        <label class="flex items-center justify-between">
+          <span class="text-sm text-slate-700">减少动画</span>
+          <select id="settingMotion" class="px-2 py-1 rounded-md border border-slate-300">
+            <option value="auto">自动</option>
+            <option value="on">开启</option>
+            <option value="off">关闭</option>
+          </select>
+        </label>
+        <label class="flex items-center justify-between">
+          <span class="text-sm text-slate-700">音量</span>
+          <div class="flex items-center gap-2">
+            <input id="settingVolume" type="range" min="0" max="100" step="1" class="w-40">
+            <span id="settingVolumeValue" class="text-xs text-slate-500">50%</span>
+          </div>
+        </label>
+        <label class="flex items-center justify-between">
+          <span class="text-sm text-slate-700">音效风格</span>
+          <select id="settingSoundPack" class="px-2 py-1 rounded-md border border-slate-300">
+            <option value="clear">清亮</option>
+            <option value="electro">电子</option>
+            <option value="soft">柔和</option>
+          </select>
+        </label>
+        <label class="flex items-center justify-between">
+          <span class="text-sm text-slate-700">自适应训练</span>
+          <input id="settingAdaptive" type="checkbox" class="h-4 w-4" />
+        </label>
+        <label class="flex items-center justify-between">
+          <span class="text-sm text-slate-700">间隔复现（易错卡）</span>
+          <input id="settingSpaced" type="checkbox" class="h-4 w-4" />
+        </label>
+        <label class="flex items-center justify-between">
+          <span class="text-sm text-slate-700">语言</span>
+          <select id="settingLanguage" class="px-2 py-1 rounded-md border border-slate-300">
+            <option value="auto">自动</option>
+            <option value="zh">中文</option>
+            <option value="en">English</option>
+          </select>
+        </label>
+        <div class="h-px bg-slate-200"></div>
+        <label class="flex items-center justify-between">
+          <span class="text-sm text-slate-700">玩法</span>
+          <select id="settingGameMode" class="px-2 py-1 rounded-md border border-slate-300">
+            <option value="classic">经典</option>
+            <option value="countdown">限时</option>
+          </select>
+        </label>
+        <div id="countdownConfig" class="grid grid-cols-3 gap-2 text-sm">
+          <label class="flex items-center justify-between col-span-1">
+            <span class="text-slate-700">简单(s)</span>
+            <input id="settingCountdownEasy" type="number" min="10" max="999" step="1" class="w-20 px-2 py-1 rounded-md border border-slate-300" />
+          </label>
+          <label class="flex items-center justify-between col-span-1">
+            <span class="text-slate-700">中等(s)</span>
+            <input id="settingCountdownMedium" type="number" min="10" max="999" step="1" class="w-20 px-2 py-1 rounded-md border border-slate-300" />
+          </label>
+          <label class="flex items-center justify-between col-span-1">
+            <span class="text-slate-700">困难(s)</span>
+            <input id="settingCountdownHard" type="number" min="10" max="999" step="1" class="w-20 px-2 py-1 rounded-md border border-slate-300" />
+          </label>
+        </div>
+        <div class="h-px bg-slate-200"></div>
+        <label class="flex items-center justify-between">
+          <span class="text-sm text-slate-700">卡面主题</span>
+          <select id="settingCardFace" class="px-2 py-1 rounded-md border border-slate-300">
+            <option value="emoji">Emoji</option>
+            <option value="numbers">数字</option>
+            <option value="letters">字母</option>
+            <option value="shapes">形状</option>
+            <option value="colors">颜色</option>
+          </select>
+        </label>
+        <div class="h-px bg-slate-200"></div>
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-slate-700">数据备份</span>
+          <div class="flex items-center gap-2">
+            <button id="exportBtn" class="px-2 py-1 rounded-md border border-slate-300 text-sm bg-white hover:bg-slate-50">导出</button>
+            <button id="importBtn" class="px-2 py-1 rounded-md border border-slate-300 text-sm bg-white hover:bg-slate-50">导入</button>
+            <input id="importFile" type="file" accept="application/json" class="hidden" />
+          </div>
+        </div>
+      </div>
+      <div class="mt-5 flex justify-end gap-3">
+        <button id="settingsCancel" class="px-4 py-2 rounded-md border border-slate-300 text-slate-700 text-sm bg-white hover:bg-slate-50">取消</button>
+        <button id="settingsSave" class="px-4 py-2 rounded-md bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700">保存</button>
+        <button id="resetData" class="px-4 py-2 rounded-md border border-rose-300 text-rose-700 text-sm bg-white hover:bg-rose-50">重置数据</button>
+      </div>
+    </div>
+  </div>
+  <canvas id="confettiCanvas" class="fixed inset-0 pointer-events-none hidden"></canvas>
+  <div id="comboToast" class="fixed top-24 left-1/2 -translate-x-1/2 z-40 hidden px-3 py-1 rounded-full bg-amber-500/90 text-white text-sm shadow-lg"></div>
+  <div id="statsModal" class="fixed inset-0 hidden items-center justify-center bg-black/50 p-4">
+    <div class="w-full max-w-md rounded-2xl bg-white dark:bg-slate-800 shadow-lg p-6">
+      <h2 id="statsTitle" class="text-lg font-semibold mb-2">统计</h2>
+      <ul id="statsList" class="space-y-2 text-sm"></ul>
+      <div class="mt-5 flex justify-end">
+        <button id="statsClose" class="px-4 py-2 rounded-md border border-slate-300 text-slate-700 text-sm bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700">关闭</button>
+      </div>
+    </div>
+  </div>
+  <div id="achievementsModal" class="fixed inset-0 hidden items-center justify-center bg-black/50 p-4">
+    <div class="w-full max-w-md rounded-2xl bg-white dark:bg-slate-800 shadow-lg p-6">
+      <h2 id="achievementsTitle" class="text-lg font-semibold mb-2">成就</h2>
+      <p id="achievementsNew" class="text-sm text-emerald-600 mb-2 hidden"></p>
+      <ul id="achievementsList" class="space-y-2 text-sm"></ul>
+      <div class="mt-5 flex justify-end">
+        <button id="achievementsClose" class="px-4 py-2 rounded-md border border-slate-300 text-slate-700 text-sm bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700">关闭</button>
+      </div>
+    </div>
+  </div>
+  <!-- Recall Test Modal -->
+  <div id="recallModal" class="fixed inset-0 hidden items-center justify-center bg-black/50 p-4">
+    <div class="w-full max-w-md rounded-2xl bg-white dark:bg-slate-800 shadow-lg p-6">
+      <h2 id="recallTitle" class="text-lg font-semibold mb-2">回忆测验</h2>
+      <p id="recallDesc" class="text-sm text-slate-600 dark:text-slate-300 mb-3">请从下列选项中勾选本局中出现过的卡面。</p>
+      <div id="recallChoices" class="grid grid-cols-3 gap-2 mb-4"></div>
+      <div class="mt-2 flex justify-end gap-3">
+        <button id="recallSkip" class="px-4 py-2 rounded-md border border-slate-300 text-slate-700 text-sm bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700">跳过</button>
+        <button id="recallSubmit" class="px-4 py-2 rounded-md bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700">提交</button>
+      </div>
+    </div>
+  </div>
+  <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 hidden px-3 py-2 rounded-md bg-black/80 text-white text-sm shadow-lg"></div>
+  <script src="./app.js"></script>
+</body>
+</html>

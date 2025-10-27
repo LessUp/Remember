@@ -1,0 +1,11 @@
+{
+  "name": "记忆力训练 - 翻牌配对",
+  "short_name": "记忆翻牌",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#4f46e5",
+  "description": "纯前端记忆训练小游戏：翻牌配对，多难度、排行榜、成就与离线支持。",
+  "icons": []
+}

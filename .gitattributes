@@ -1,0 +1,16 @@
+# Ensure consistent line endings
+* text=auto
+
+# Treat front-end files as text
+glob:*.{html,css,js,json,md} text
+
+# Preserve LF for shell scripts
+*.sh text eol=lf
+
+# Binary assets
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.svg binary
+*.ico binary
