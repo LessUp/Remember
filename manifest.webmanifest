@@ -7,5 +7,12 @@
   "background_color": "#f8fafc",
   "theme_color": "#4f46e5",
   "description": "纯前端记忆训练小游戏：翻牌配对，多难度、排行榜、成就与离线支持。",
-  "icons": []
+  "icons": [
+    {
+      "src": "./assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
 }
