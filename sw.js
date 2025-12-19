@@ -7,6 +7,9 @@ const ASSETS = [
   './src/keys.js',
   './src/utils.js',
   './src/storage.js',
+  './src/i18n.js',
+  './src/effects.js',
+  './src/pools.js',
   './manifest.webmanifest',
   './assets/icon.svg'
 ];
