@@ -10,6 +10,8 @@ const ASSETS = [
   './src/i18n.js',
   './src/effects.js',
   './src/pools.js',
+  './src/timer.js',
+  './src/confetti.js',
   './manifest.webmanifest',
   './assets/icon.svg'
 ];

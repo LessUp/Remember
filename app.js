@@ -5,6 +5,8 @@ const __RememberStorage__ = (typeof module !== 'undefined' && module.exports) ? 
 const __RememberI18n__ = (typeof module !== 'undefined' && module.exports) ? require('./src/i18n.js') : __GLOBAL__.RememberI18n;
 const __RememberEffects__ = (typeof module !== 'undefined' && module.exports) ? require('./src/effects.js') : __GLOBAL__.RememberEffects;
 const __RememberPools__ = (typeof module !== 'undefined' && module.exports) ? require('./src/pools.js') : __GLOBAL__.RememberPools;
+const __RememberTimer__ = (typeof module !== 'undefined' && module.exports) ? require('./src/timer.js') : __GLOBAL__.RememberTimer;
+const __RememberConfetti__ = (typeof module !== 'undefined' && module.exports) ? require('./src/confetti.js') : __GLOBAL__.RememberConfetti;
 
 function loadAdaptive() {
   return __RememberStorage__.loadAdaptive();
@@ -133,9 +135,7 @@ let nbackRtSum = 0;
 let nbackRtCount = 0;
 
 function formatTime(s) {
-  const m = Math.floor(s / 60).toString().padStart(2, "0");
-  const r = (s % 60).toString().padStart(2, "0");
-  return `${m}:${r}`;
+  return __RememberTimer__.formatTime(s);
 }
 
 function ensureAudio() {
@@ -238,47 +238,11 @@ function applyMotionPreference() {
 }
 
 function resizeConfettiCanvas() {
-  if (!confettiCanvas) return;
-  confettiCanvas.width = window.innerWidth;
-  confettiCanvas.height = window.innerHeight;
+  __RememberConfetti__.resizeConfettiCanvas(confettiCanvas);
 }
 
 function runConfetti(duration = 1400) {
-  if (!confettiCanvas) return;
-  if (isReducedMotion()) return;
-  const ctx = confettiCanvas.getContext('2d');
-  resizeConfettiCanvas();
-  confettiCanvas.classList.remove('hidden');
-  const colors = ['#6366F1','#A78BFA','#22C55E','#F43F5E','#F59E0B','#10B981','#EF4444'];
-  const N = 120;
-  const parts = Array.from({ length: N }, () => ({
-    x: Math.random() * confettiCanvas.width,
-    y: -20 - Math.random() * confettiCanvas.height,
-    r: 4 + Math.random() * 6,
-    vx: -1 + Math.random() * 2,
-    vy: 2 + Math.random() * 3,
-    color: colors[Math.floor(Math.random() * colors.length)],
-    rot: Math.random() * Math.PI,
-    vr: (-0.2 + Math.random() * 0.4),
-  }));
-  const start = performance.now();
-  function frame(t) {
-    const dt = 16;
-    ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
-    for (const p of parts) {
-      p.x += p.vx; p.y += p.vy; p.rot += p.vr;
-      if (p.y > confettiCanvas.height + 10) { p.y = -10; p.x = Math.random() * confettiCanvas.width; }
-      ctx.save();
-      ctx.translate(p.x, p.y);
-      ctx.rotate(p.rot);
-      ctx.fillStyle = p.color;
-      ctx.fillRect(-p.r, -p.r, p.r * 2, p.r * 2);
-      ctx.restore();
-    }
-    if (t - start < duration) requestAnimationFrame(frame);
-    else confettiCanvas.classList.add('hidden');
-  }
-  requestAnimationFrame(frame);
+  __RememberConfetti__.runConfetti(confettiCanvas, isReducedMotion, duration);
 }
 
 function settingsKey() { return __RememberKeys__.settingsKey(); }
@@ -485,39 +449,40 @@ function updateBestUI() {
 }
 
 function stopTimer() {
-  if (timerId) {
-    clearInterval(timerId);
-    timerId = null;
-  }
+  timerId = __RememberTimer__.stopTimer(timerId);
 }
 
 function resetTimer() {
   stopTimer();
-  elapsed = 0;
-  if (isCountdownMode()) {
-    countdownLeft = getCountdownFor(currentDifficulty);
-    timeEl.textContent = formatTime(countdownLeft);
-  } else {
-    timeEl.textContent = formatTime(elapsed);
-  }
+  const res = __RememberTimer__.resetTimer({
+    isCountdownMode,
+    getCountdownFor,
+    currentDifficulty,
+  });
+  elapsed = res.elapsed;
+  countdownLeft = res.countdownLeft;
+  if (timeEl) timeEl.textContent = res.displayText;
 }
 
 function startTimer() {
-  if (timerId) return;
-  timerId = setInterval(() => {
-    elapsed += 1;
-    if (isCountdownMode()) {
-      countdownLeft = Math.max(0, countdownLeft - 1);
-      timeEl.textContent = formatTime(countdownLeft);
-      if (countdownLeft <= 0) {
-        stopTimer();
-        onTimeUp();
-        return;
-      }
-    } else {
-      timeEl.textContent = formatTime(elapsed);
-    }
-  }, 1000);
+  const res = __RememberTimer__.startTimer({
+    timerId,
+    elapsed,
+    countdownLeft,
+    isCountdownMode,
+    getCountdownFor,
+    currentDifficulty,
+    onUpdate: (v) => {
+      elapsed = v.elapsed;
+      countdownLeft = v.countdownLeft;
+      if (timeEl) timeEl.textContent = v.displayText;
+    },
+    onStop: () => { timerId = null; },
+    onTimeUp,
+  });
+  timerId = res.timerId;
+  elapsed = res.elapsed;
+  countdownLeft = res.countdownLeft;
 }
 
 function setGridColumns(cols) {
