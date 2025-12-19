@@ -1,9 +1,10 @@
 const __GLOBAL__ = typeof globalThis !== 'undefined' ? globalThis : (typeof window !== 'undefined' ? window : this);
 const __RememberKeys__ = (typeof module !== 'undefined' && module.exports) ? require('./src/keys.js') : __GLOBAL__.RememberKeys;
 const __RememberUtils__ = (typeof module !== 'undefined' && module.exports) ? require('./src/utils.js') : __GLOBAL__.RememberUtils;
+const __RememberStorage__ = (typeof module !== 'undefined' && module.exports) ? require('./src/storage.js') : __GLOBAL__.RememberStorage;
 
 function loadAdaptive() {
-  try { const v = localStorage.getItem(adaptiveKey()); return v ? JSON.parse(v) : { rating: 1000, lastDiff: 'easy' }; } catch { return { rating: 1000, lastDiff: 'easy' }; }
+  return __RememberStorage__.loadAdaptive();
 }
 
 function getAdaptiveAssist(diff) {
@@ -18,7 +19,7 @@ function getAdaptiveAssist(diff) {
   else { preview = 0; hint = Math.max(0, baseHints - 1); }
   return { previewSec: preview, hintLimit: hint };
 }
-function saveAdaptive(a) { localStorage.setItem(adaptiveKey(), JSON.stringify(a)); }
+function saveAdaptive(a) { __RememberStorage__.saveAdaptive(a); }
 function expectedStarsFor(diff) { return diff === 'easy' ? 4 : diff === 'medium' ? 3.5 : 3; }
 function updateAdaptiveOnEnd(win, stars, diff) {
   if (!settings.adaptive) return;
@@ -39,8 +40,8 @@ function decideDifficulty() {
   return 'hard';
 }
 
-function loadSpaced(theme) { try { const v = localStorage.getItem(spacedKey(theme)); return v ? JSON.parse(v) : {}; } catch { return {}; } }
-function saveSpaced(theme, data) { localStorage.setItem(spacedKey(theme), JSON.stringify(data)); }
+function loadSpaced(theme) { return __RememberStorage__.loadSpaced(theme); }
+function saveSpaced(theme, data) { __RememberStorage__.saveSpaced(theme, data); }
 
 function applySpacedAfterWin(theme) {
   if (!settings.spaced) return;
@@ -326,16 +327,9 @@ function getCountdownFor(diff) {
 }
 
 function loadStats() {
-  try {
-    const v = localStorage.getItem(statsKey());
-    if (v) {
-      const s = JSON.parse(v);
-      return { games: 0, wins: 0, timeSum: 0, movesSum: 0, hintsSum: 0, comboSum: 0, bestCombo: 0, recallAttempts: 0, precisionSum: 0, recallSum: 0, nbackAttempts: 0, nbackAccSum: 0, nbackRtSum: 0, nbackRtCount: 0, ...s };
-    }
-    return { games: 0, wins: 0, timeSum: 0, movesSum: 0, hintsSum: 0, comboSum: 0, bestCombo: 0, recallAttempts: 0, precisionSum: 0, recallSum: 0, nbackAttempts: 0, nbackAccSum: 0, nbackRtSum: 0, nbackRtCount: 0 };
-  } catch { return { games: 0, wins: 0, timeSum: 0, movesSum: 0, hintsSum: 0, comboSum: 0, bestCombo: 0, recallAttempts: 0, precisionSum: 0, recallSum: 0, nbackAttempts: 0, nbackAccSum: 0, nbackRtSum: 0, nbackRtCount: 0 }; }
+  return __RememberStorage__.loadStats();
 }
-function saveStats(s) { localStorage.setItem(statsKey(), JSON.stringify(s)); }
+function saveStats(s) { __RememberStorage__.saveStats(s); }
 function updateStatsOnNewGame() { const s = loadStats(); s.games += 1; saveStats(s); }
 function updateStatsOnWin() { const s = loadStats(); s.wins += 1; s.timeSum += elapsed; s.movesSum += moves; s.hintsSum += hintsUsed; s.comboSum = (s.comboSum || 0) + (maxComboThisGame || 0); s.bestCombo = Math.max(s.bestCombo || 0, maxComboThisGame || 0); saveStats(s); }
 function formatRate(a, b) { return b > 0 ? Math.round((a / b) * 100) + '%' : '—'; }
@@ -395,37 +389,11 @@ function renderRating(stars) {
 }
 
 function loadSettings() {
-  try {
-    const raw = localStorage.getItem(settingsKey());
-    if (!raw) return { ...DEFAULT_SETTINGS };
-    const s = JSON.parse(raw);
-    return {
-      sound: !!s.sound,
-      vibrate: !!s.vibrate,
-      previewSeconds: Math.max(0, Math.min(5, parseInt(s.previewSeconds ?? 1))) || 0,
-      accent: (s.accent || 'indigo'),
-      theme: (s.theme || 'auto'),
-      motion: (s.motion || 'auto'),
-      volume: Math.max(0, Math.min(1, Number(s.volume ?? 0.5))),
-      soundPack: (s.soundPack || 'clear'),
-      cardFace: (s.cardFace || 'emoji'),
-      gameMode: (s.gameMode || 'classic'),
-      countdown: {
-        easy: Math.max(10, Math.min(999, parseInt((s.countdown && s.countdown.easy) ?? DEFAULT_SETTINGS.countdown.easy))),
-        medium: Math.max(10, Math.min(999, parseInt((s.countdown && s.countdown.medium) ?? DEFAULT_SETTINGS.countdown.medium))),
-        hard: Math.max(10, Math.min(999, parseInt((s.countdown && s.countdown.hard) ?? DEFAULT_SETTINGS.countdown.hard))),
-      },
-      language: (s.language || 'auto'),
-      adaptive: !!s.adaptive,
-      spaced: !!s.spaced,
-    };
-  } catch {
-    return { ...DEFAULT_SETTINGS };
-  }
+  return __RememberStorage__.loadSettings(DEFAULT_SETTINGS);
 }
 
 function saveSettings(s) {
-  localStorage.setItem(settingsKey(), JSON.stringify(s));
+  __RememberStorage__.saveSettings(s);
 }
 
 function applySettingsToUI() {
@@ -451,19 +419,11 @@ function applySettingsToUI() {
 }
 
 function loadLeaderboard(k) {
-  try {
-    const v = localStorage.getItem(lbKey(k));
-    if (!v) return [];
-    const arr = JSON.parse(v);
-    if (Array.isArray(arr)) return arr;
-    return [];
-  } catch {
-    return [];
-  }
+  return __RememberStorage__.loadLeaderboard(k);
 }
 
 function saveLeaderboard(k, arr) {
-  localStorage.setItem(lbKey(k), JSON.stringify(arr));
+  __RememberStorage__.saveLeaderboard(k, arr);
 }
 
 function updateLeaderboardUI() {
@@ -526,17 +486,11 @@ function bestKey(k) {
 }
 
 function loadBest(k) {
-  try {
-    const v = localStorage.getItem(bestKey(k));
-    if (!v) return null;
-    return JSON.parse(v);
-  } catch {
-    return null;
-  }
+  return __RememberStorage__.loadBest(k);
 }
 
 function saveBest(k, data) {
-  localStorage.setItem(bestKey(k), JSON.stringify(data));
+  __RememberStorage__.saveBest(k, data);
 }
 
 function updateBestUI() {
@@ -778,8 +732,7 @@ function onWin() {
   openRecallTest();
   // Daily complete
   if (dailyActive) {
-    const key = dailyKey(todayStr(), currentDifficulty);
-    try { if (!localStorage.getItem(key)) localStorage.setItem(key, JSON.stringify({ done: true, at: Date.now() })); } catch {}
+    __RememberStorage__.markDailyDone(todayStr(), currentDifficulty);
     showToast('每日挑战完成');
   }
 }
@@ -802,16 +755,11 @@ function closeModal() {
 }
 
 function shouldAutoShowGuide() {
-  try {
-    const val = localStorage.getItem(GUIDE_KEY);
-    return !val;
-  } catch {
-    return true;
-  }
+  return __RememberStorage__.shouldAutoShowGuide(GUIDE_KEY);
 }
 
 function markGuideSeen() {
-  try { localStorage.setItem(GUIDE_KEY, 'seen'); } catch {}
+  __RememberStorage__.markGuideSeen(GUIDE_KEY);
 }
 
 function openGuideModal(isAuto) {
@@ -827,7 +775,7 @@ function openGuideModal(isAuto) {
 function closeGuideModal() {
   if (!guideModal) return;
   if (guideNoShow && guideNoShow.checked) {
-    try { localStorage.setItem(GUIDE_KEY, 'hidden'); } catch {}
+    __RememberStorage__.hideGuide(GUIDE_KEY);
   }
   guideModal.classList.add('hidden');
   guideModal.classList.remove('flex');
@@ -995,9 +943,7 @@ if (typeof document !== 'undefined') {
   if (dailyBtn) dailyBtn.addEventListener('click', () => {
     if (dailyInfoEl) {
       const date = todayStr();
-      const key = dailyKey(date, difficultyEl.value);
-      let status = '未完成';
-      try { const v = localStorage.getItem(key); if (v) status = '已完成'; } catch {}
+      const status = __RememberStorage__.isDailyDone(date, difficultyEl.value) ? '已完成' : '未完成';
       dailyInfoEl.textContent = `今日 ${date} · 难度：${difficultyEl.options[difficultyEl.selectedIndex].text} · 状态：${status}`;
     }
     if (dailyModal) { dailyModal.classList.remove('hidden'); dailyModal.classList.add('flex'); }
@@ -1017,11 +963,10 @@ if (typeof document !== 'undefined') {
   if (nbackStartBtn) nbackStartBtn.addEventListener('click', () => { if (nbackRunning) stopNBack(); else startNBack(); });
   if (resetDataBtn) resetDataBtn.addEventListener('click', () => {
     if (!confirm('确定清空本地所有成绩与设置吗？该操作不可恢复。')) return;
-    const keys = [];
-    for (let i = 0; i < localStorage.length; i++) keys.push(localStorage.key(i));
-    keys.forEach(k => { if (k && k.startsWith('memory_match_')) localStorage.removeItem(k); });
+    const keys = __RememberStorage__.listAllKeys();
+    __RememberStorage__.removeKeysByPrefix(keys, 'memory_match_');
     // 也清理 best_* 兼容旧键（若存在）
-    keys.forEach(k => { if (k && k.startsWith('memory_match_best_')) localStorage.removeItem(k); });
+    __RememberStorage__.removeKeysByPrefix(keys, 'memory_match_best_');
     location.reload();
   });
   exportBtn.addEventListener('click', exportData);
@@ -1516,9 +1461,9 @@ const achievementsDef = [
 ];
 
 function loadAchievements() {
-  try { const v = localStorage.getItem(achKey()); return v ? JSON.parse(v) : {}; } catch { return {}; }
+  return __RememberStorage__.loadAchievements();
 }
-function saveAchievements(obj) { localStorage.setItem(achKey(), JSON.stringify(obj)); }
+function saveAchievements(obj) { __RememberStorage__.saveAchievements(obj); }
 
 function checkAchievementsOnWin() {
   const store = loadAchievements();
