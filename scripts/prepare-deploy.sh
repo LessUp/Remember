@@ -23,6 +23,11 @@ copy_static "app.js"
 copy_static "sw.js"
 copy_static "manifest.webmanifest"
 
+if [[ -d "$ROOT_DIR/src" ]]; then
+  cp -R "$ROOT_DIR/src" "$DIST_DIR/"
+  echo "[prepare-deploy] copied src/ directory"
+fi
+
 if [[ -d "$ROOT_DIR/assets" ]]; then
   cp -R "$ROOT_DIR/assets" "$DIST_DIR/"
   echo "[prepare-deploy] copied assets/ directory"

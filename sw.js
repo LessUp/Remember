@@ -4,6 +4,8 @@ const ASSETS = [
   './',
   './index.html',
   './app.js',
+  './src/keys.js',
+  './src/utils.js',
   './manifest.webmanifest',
   './assets/icon.svg'
 ];

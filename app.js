@@ -1,3 +1,7 @@
+const __GLOBAL__ = typeof globalThis !== 'undefined' ? globalThis : (typeof window !== 'undefined' ? window : this);
+const __RememberKeys__ = (typeof module !== 'undefined' && module.exports) ? require('./src/keys.js') : __GLOBAL__.RememberKeys;
+const __RememberUtils__ = (typeof module !== 'undefined' && module.exports) ? require('./src/utils.js') : __GLOBAL__.RememberUtils;
+
 function loadAdaptive() {
   try { const v = localStorage.getItem(adaptiveKey()); return v ? JSON.parse(v) : { rating: 1000, lastDiff: 'easy' }; } catch { return { rating: 1000, lastDiff: 'easy' }; }
 }
@@ -294,36 +298,24 @@ function runConfetti(duration = 1400) {
   requestAnimationFrame(frame);
 }
 
-function settingsKey() { return "memory_match_settings"; }
-function lbKey(k) { return `memory_match_lb_${k}`; }
-function achKey() { return 'memory_match_achievements'; }
-function statsKey() { return 'memory_match_stats'; }
-function adaptiveKey() { return 'memory_match_adaptive'; }
-function spacedKey(theme) { return `memory_match_spaced_${theme}`; }
-function dailyKey(dateStr, diff) { return `memory_match_daily_${dateStr}_${diff}`; }
-function todayStr() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function settingsKey() { return __RememberKeys__.settingsKey(); }
+function lbKey(k) { return __RememberKeys__.lbKey(k); }
+function achKey() { return __RememberKeys__.achKey(); }
+function statsKey() { return __RememberKeys__.statsKey(); }
+function adaptiveKey() { return __RememberKeys__.adaptiveKey(); }
+function spacedKey(theme) { return __RememberKeys__.spacedKey(theme); }
+function dailyKey(dateStr, diff) { return __RememberKeys__.dailyKey(dateStr, diff); }
+function todayStr() { return __RememberKeys__.todayStr(); }
 
 function seedFromDate(dateStr, diff, theme) {
   // Simple hash: sum char codes with multipliers
-  let h = 2166136261;
-  const s = `${dateStr}|${diff}|${theme}`;
-  for (let i = 0; i < s.length; i++) h = (h ^ s.charCodeAt(i)) >>> 0, h = Math.imul(h, 16777619) >>> 0;
-  return h >>> 0;
+  return __RememberUtils__.seedFromDate(dateStr, diff, theme);
 }
 function mulberry32(a) {
-  return function() {
-    let t = a += 0x6D2B79F5;
-    t = Math.imul(t ^ t >>> 15, t | 1);
-    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
-  }
+  return __RememberUtils__.mulberry32(a);
 }
 function seededShuffle(arr, rng) {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
+  return __RememberUtils__.seededShuffle(arr, rng);
 }
 
 function isCountdownMode() { return (settings.gameMode || 'classic') === 'countdown'; }
@@ -526,15 +518,11 @@ function resumeGame() {
 }
 
 function shuffle(arr) {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
+  return __RememberUtils__.shuffle(arr);
 }
 
 function bestKey(k) {
-  return `memory_match_best_${k}`;
+  return __RememberKeys__.bestKey(k);
 }
 
 function loadBest(k) {
