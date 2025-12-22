@@ -7,6 +7,7 @@ const __RememberEffects__ = (typeof module !== 'undefined' && module.exports) ? 
 const __RememberPools__ = (typeof module !== 'undefined' && module.exports) ? require('./src/pools.js') : __GLOBAL__.RememberPools;
 const __RememberTimer__ = (typeof module !== 'undefined' && module.exports) ? require('./src/timer.js') : __GLOBAL__.RememberTimer;
 const __RememberConfetti__ = (typeof module !== 'undefined' && module.exports) ? require('./src/confetti.js') : __GLOBAL__.RememberConfetti;
+const __RememberUI__ = (typeof module !== 'undefined' && module.exports) ? require('./src/ui.js') : __GLOBAL__.RememberUI;
 
 function loadAdaptive() {
   return __RememberStorage__.loadAdaptive();
@@ -734,93 +735,25 @@ function maybeShowGuideOnFirstVisit() {
 
 if (typeof document !== 'undefined') {
   document.addEventListener("DOMContentLoaded", () => {
-  gridEl = document.getElementById("grid");
-  movesEl = document.getElementById("moves");
-  timeEl = document.getElementById("time");
-  bestEl = document.getElementById("best");
-  difficultyEl = document.getElementById("difficulty");
-  newGameBtn = document.getElementById("newGameBtn");
-  winModal = document.getElementById("winModal");
-  winStatsEl = document.getElementById("winStats");
-  playAgainBtn = document.getElementById("playAgain");
-  closeModalBtn = document.getElementById("closeModal");
-  ratingStarsEl = document.getElementById("ratingStars");
-  comboToastEl = document.getElementById("comboToast");
-  loseModal = document.getElementById("loseModal");
-  failRetryBtn = document.getElementById("failRetry");
-  failCloseBtn = document.getElementById("failClose");
-  pauseBtn = document.getElementById("pauseBtn");
-  hintBtn = document.getElementById("hintBtn");
-  hintLeftEl = document.getElementById("hintLeft");
-  settingsBtn = document.getElementById("settingsBtn");
-  pauseOverlay = document.getElementById("pauseOverlay");
-  resumeBtn = document.getElementById("resumeBtn");
-  settingsModal = document.getElementById("settingsModal");
-  settingSound = document.getElementById("settingSound");
-  settingVibrate = document.getElementById("settingVibrate");
-  settingPreview = document.getElementById("settingPreview");
-  settingAccent = document.getElementById("settingAccent");
-  settingCardFace = document.getElementById("settingCardFace");
-  settingTheme = document.getElementById("settingTheme");
-  settingMotion = document.getElementById("settingMotion");
-  settingVolume = document.getElementById("settingVolume");
-  settingVolumeValue = document.getElementById("settingVolumeValue");
-  settingSoundPack = document.getElementById("settingSoundPack");
-  settingLanguage = document.getElementById("settingLanguage");
-  settingAdaptive = document.getElementById("settingAdaptive");
-  settingSpaced = document.getElementById("settingSpaced");
-  settingGameMode = document.getElementById("settingGameMode");
-  settingCountdownEasy = document.getElementById("settingCountdownEasy");
-  settingCountdownMedium = document.getElementById("settingCountdownMedium");
-  settingCountdownHard = document.getElementById("settingCountdownHard");
-  countdownConfigEl = document.getElementById("countdownConfig");
-  settingsCancel = document.getElementById("settingsCancel");
-  settingsSave = document.getElementById("settingsSave");
-  shareBtn = document.getElementById("shareBtn");
-  leaderboardList = document.getElementById("leaderboardList");
-  pairsLeftEl = document.getElementById("pairsLeft");
-  progressBarEl = document.getElementById("progressBar");
-  confettiCanvas = document.getElementById("confettiCanvas");
-  dailyModal = document.getElementById("dailyModal");
-  dailyBtn = document.getElementById("dailyBtn");
-  dailyCloseBtn = document.getElementById("dailyClose");
-  dailyStartBtn = document.getElementById("dailyStart");
-  dailyInfoEl = document.getElementById("dailyInfo");
-  achievementsModal = document.getElementById("achievementsModal");
-  achievementsBtn = document.getElementById("achievementsBtn");
-  achievementsClose = document.getElementById("achievementsClose");
-  achievementsList = document.getElementById("achievementsList");
-  achievementsNew = document.getElementById("achievementsNew");
-  exportBtn = document.getElementById("exportBtn");
-  importBtn = document.getElementById("importBtn");
-  importFile = document.getElementById("importFile");
-  toastEl = document.getElementById("toast");
-  statsModal = document.getElementById("statsModal");
-  statsBtn = document.getElementById("statsBtn");
-  statsClose = document.getElementById("statsClose");
-  statsListEl = document.getElementById("statsList");
-  resetDataBtn = document.getElementById("resetData");
-  recallModal = document.getElementById('recallModal');
-  recallChoicesEl = document.getElementById('recallChoices');
-  recallSkipBtn = document.getElementById('recallSkip');
-  recallSubmitBtn = document.getElementById('recallSubmit');
-  nbackBtn = document.getElementById('nbackBtn');
-  nbackModal = document.getElementById('nbackModal');
-  nbackStimEl = document.getElementById('nbackStim');
-  nbackNSelect = document.getElementById('nbackNSelect');
-  nbackSpeedSelect = document.getElementById('nbackSpeedSelect');
-  nbackLenSelect = document.getElementById('nbackLenSelect');
-  nbackStartBtn = document.getElementById('nbackStart');
-  nbackCloseBtn = document.getElementById('nbackClose');
-  guideBtn = document.getElementById('guideBtn');
-  guideModal = document.getElementById('guideModal');
-  guideCloseBtn = document.getElementById('guideClose');
-  guideNoShow = document.getElementById('guideNoShow');
-  guideBasicsList = document.getElementById('guideBasicsList');
-  guideAdvancedList = document.getElementById('guideAdvancedList');
-  guideShortcutsList = document.getElementById('guideShortcutsList');
-  guideNoShowLabel = document.getElementById('guideNoShowLabel');
-  guideOpenHintEl = document.getElementById('guideOpenHint');
+  const ui = __RememberUI__.bind(document);
+  ({
+    gridEl, movesEl, timeEl, bestEl, difficultyEl, newGameBtn, winModal, winStatsEl, playAgainBtn, closeModalBtn,
+    ratingStarsEl, comboToastEl, loseModal, failRetryBtn, failCloseBtn,
+    pauseBtn, hintBtn, hintLeftEl, settingsBtn, pauseOverlay, resumeBtn,
+    settingsModal, settingSound, settingVibrate, settingPreview, settingAccent, settingCardFace,
+    settingTheme, settingMotion, settingVolume, settingVolumeValue, settingSoundPack,
+    settingLanguage, settingAdaptive, settingSpaced,
+    settingGameMode, settingCountdownEasy, settingCountdownMedium, settingCountdownHard, countdownConfigEl,
+    settingsCancel, settingsSave,
+    shareBtn, leaderboardList, pairsLeftEl, progressBarEl, confettiCanvas,
+    dailyModal, dailyBtn, dailyCloseBtn, dailyStartBtn, dailyInfoEl,
+    achievementsModal, achievementsBtn, achievementsClose, achievementsList, achievementsNew,
+    exportBtn, importBtn, importFile, toastEl,
+    statsModal, statsBtn, statsClose, statsListEl, resetDataBtn,
+    recallModal, recallChoicesEl, recallSkipBtn, recallSubmitBtn,
+    nbackBtn, nbackModal, nbackStimEl, nbackNSelect, nbackSpeedSelect, nbackLenSelect, nbackStartBtn, nbackCloseBtn,
+    guideBtn, guideModal, guideCloseBtn, guideNoShow, guideBasicsList, guideAdvancedList, guideShortcutsList, guideNoShowLabel, guideOpenHintEl,
+  } = ui);
 
   difficultyEl.addEventListener("change", () => initGame(difficultyEl.value));
   newGameBtn.addEventListener("click", () => initGame(difficultyEl.value));
