@@ -12,6 +12,7 @@ const ASSETS = [
   './src/pools.js',
   './src/timer.js',
   './src/confetti.js',
+  './src/ui-events.js',
   './src/ui.js',
   './manifest.webmanifest',
   './assets/icon.svg'

@@ -7,6 +7,7 @@ const __RememberEffects__ = (typeof module !== 'undefined' && module.exports) ? 
 const __RememberPools__ = (typeof module !== 'undefined' && module.exports) ? require('./src/pools.js') : __GLOBAL__.RememberPools;
 const __RememberTimer__ = (typeof module !== 'undefined' && module.exports) ? require('./src/timer.js') : __GLOBAL__.RememberTimer;
 const __RememberConfetti__ = (typeof module !== 'undefined' && module.exports) ? require('./src/confetti.js') : __GLOBAL__.RememberConfetti;
+const __RememberUIEvents__ = (typeof module !== 'undefined' && module.exports) ? require('./src/ui-events.js') : __GLOBAL__.RememberUIEvents;
 const __RememberUI__ = (typeof module !== 'undefined' && module.exports) ? require('./src/ui.js') : __GLOBAL__.RememberUI;
 
 function loadAdaptive() {
@@ -755,116 +756,151 @@ if (typeof document !== 'undefined') {
     guideBtn, guideModal, guideCloseBtn, guideNoShow, guideBasicsList, guideAdvancedList, guideShortcutsList, guideNoShowLabel, guideOpenHintEl,
   } = ui);
 
-  difficultyEl.addEventListener("change", () => initGame(difficultyEl.value));
-  newGameBtn.addEventListener("click", () => initGame(difficultyEl.value));
-  playAgainBtn.addEventListener("click", () => { closeModal(); initGame(difficultyEl.value); });
-  closeModalBtn.addEventListener("click", closeModal);
-  pauseBtn.addEventListener("click", togglePause);
-  resumeBtn.addEventListener("click", resumeGame);
-  if (failRetryBtn) failRetryBtn.addEventListener('click', () => { if (loseModal) { loseModal.classList.add('hidden'); loseModal.classList.remove('flex'); } initGame(difficultyEl.value); });
-  if (failCloseBtn) failCloseBtn.addEventListener('click', () => { if (loseModal) { loseModal.classList.add('hidden'); loseModal.classList.remove('flex'); } });
-  hintBtn.addEventListener("click", useHint);
-  settingsBtn.addEventListener("click", () => { applySettingsToUI(); settingsModal.classList.remove("hidden"); settingsModal.classList.add("flex"); });
-  if (guideBtn) guideBtn.addEventListener('click', () => openGuideModal(false));
-  if (guideCloseBtn) guideCloseBtn.addEventListener('click', () => closeGuideModal());
-  if (guideModal) guideModal.addEventListener('click', (e) => { if (e.target === guideModal) closeGuideModal(); });
-  settingsCancel.addEventListener("click", () => { settingsModal.classList.add("hidden"); settingsModal.classList.remove("flex"); });
-  settingsSave.addEventListener("click", () => {
-    const prevCardFace = settings.cardFace;
-    settings.sound = !!settingSound.checked;
-    settings.vibrate = !!settingVibrate.checked;
-    settings.previewSeconds = Math.max(0, Math.min(5, parseInt(settingPreview.value || "0")));
-    settings.accent = (settingAccent && settingAccent.value) || 'indigo';
-    settings.theme = (settingTheme && settingTheme.value) || 'auto';
-    settings.motion = (settingMotion && settingMotion.value) || 'auto';
-    settings.volume = Math.max(0, Math.min(1, Number((settingVolume && settingVolume.value) ? (settingVolume.value / 100) : 0.5)));
-    settings.soundPack = (settingSoundPack && settingSoundPack.value) || 'clear';
-    settings.cardFace = (settingCardFace && settingCardFace.value) || 'emoji';
-    settings.gameMode = (settingGameMode && settingGameMode.value) || 'classic';
-    settings.countdown = {
-      easy: Math.max(10, Math.min(999, parseInt((settingCountdownEasy && settingCountdownEasy.value) || DEFAULT_SETTINGS.countdown.easy))),
-      medium: Math.max(10, Math.min(999, parseInt((settingCountdownMedium && settingCountdownMedium.value) || DEFAULT_SETTINGS.countdown.medium))),
-      hard: Math.max(10, Math.min(999, parseInt((settingCountdownHard && settingCountdownHard.value) || DEFAULT_SETTINGS.countdown.hard))),
-    };
-    settings.language = (settingLanguage && settingLanguage.value) || 'auto';
-    settings.adaptive = !!(settingAdaptive && settingAdaptive.checked);
-    settings.spaced = !!(settingSpaced && settingSpaced.checked);
-    saveSettings(settings);
-    applyAccentToDOM();
-    applyTheme();
-    applyMotionPreference();
-    if (countdownConfigEl) countdownConfigEl.classList.toggle('hidden', !isCountdownMode());
-    settingsModal.classList.add("hidden");
-    settingsModal.classList.remove("flex");
-    applyLanguage();
-    initGame(difficultyEl.value);
-  });
-  if (settingGameMode) settingGameMode.addEventListener('change', () => { if (countdownConfigEl) countdownConfigEl.classList.toggle('hidden', !(settingGameMode.value === 'countdown')); });
-  if (settingVolume) {
-    settingVolume.addEventListener('input', () => {
-      if (settingVolumeValue) settingVolumeValue.textContent = `${settingVolume.value}%`;
-    });
-  }
-  shareBtn.addEventListener("click", async () => {
-    const text = `记忆翻牌 | 难度 ${difficultyEl.options[difficultyEl.selectedIndex].text} | 用时 ${formatTime(elapsed)} | 步数 ${moves}`;
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: "记忆翻牌成绩", text });
-      } else if (navigator.clipboard) {
-        await navigator.clipboard.writeText(text);
-        alert("已复制到剪贴板");
-      } else {
-        alert(text);
+  const events = {
+    onDifficultyChange: () => initGame(difficultyEl.value),
+    onNewGame: () => initGame(difficultyEl.value),
+    onPlayAgain: () => { closeModal(); initGame(difficultyEl.value); },
+    onCloseModal: closeModal,
+    onPause: togglePause,
+    onResume: resumeGame,
+    onFailRetry: () => { if (loseModal) { loseModal.classList.add('hidden'); loseModal.classList.remove('flex'); } initGame(difficultyEl.value); },
+    onFailClose: () => { if (loseModal) { loseModal.classList.add('hidden'); loseModal.classList.remove('flex'); } },
+    onHint: useHint,
+    onOpenSettings: () => { applySettingsToUI(); settingsModal.classList.remove("hidden"); settingsModal.classList.add("flex"); },
+    onGuideOpen: () => openGuideModal(false),
+    onGuideClose: () => closeGuideModal(),
+    onGuideModalBackdrop: (e) => { if (e.target === guideModal) closeGuideModal(); },
+    onSettingsCancel: () => { settingsModal.classList.add("hidden"); settingsModal.classList.remove("flex"); },
+    onSettingsSave: () => {
+      const prevCardFace = settings.cardFace;
+      settings.sound = !!settingSound.checked;
+      settings.vibrate = !!settingVibrate.checked;
+      settings.previewSeconds = Math.max(0, Math.min(5, parseInt(settingPreview.value || "0")));
+      settings.accent = (settingAccent && settingAccent.value) || 'indigo';
+      settings.theme = (settingTheme && settingTheme.value) || 'auto';
+      settings.motion = (settingMotion && settingMotion.value) || 'auto';
+      settings.volume = Math.max(0, Math.min(1, Number((settingVolume && settingVolume.value) ? (settingVolume.value / 100) : 0.5)));
+      settings.soundPack = (settingSoundPack && settingSoundPack.value) || 'clear';
+      settings.cardFace = (settingCardFace && settingCardFace.value) || 'emoji';
+      settings.gameMode = (settingGameMode && settingGameMode.value) || 'classic';
+      settings.countdown = {
+        easy: Math.max(10, Math.min(999, parseInt((settingCountdownEasy && settingCountdownEasy.value) || DEFAULT_SETTINGS.countdown.easy))),
+        medium: Math.max(10, Math.min(999, parseInt((settingCountdownMedium && settingCountdownMedium.value) || DEFAULT_SETTINGS.countdown.medium))),
+        hard: Math.max(10, Math.min(999, parseInt((settingCountdownHard && settingCountdownHard.value) || DEFAULT_SETTINGS.countdown.hard))),
+      };
+      settings.language = (settingLanguage && settingLanguage.value) || 'auto';
+      settings.adaptive = !!(settingAdaptive && settingAdaptive.checked);
+      settings.spaced = !!(settingSpaced && settingSpaced.checked);
+      saveSettings(settings);
+      applyAccentToDOM();
+      applyTheme();
+      applyMotionPreference();
+      if (countdownConfigEl) countdownConfigEl.classList.toggle('hidden', !isCountdownMode());
+      settingsModal.classList.add("hidden");
+      settingsModal.classList.remove("flex");
+      applyLanguage();
+      initGame(difficultyEl.value);
+    },
+    onGameModeChange: () => { if (countdownConfigEl) countdownConfigEl.classList.toggle('hidden', !(settingGameMode.value === 'countdown')); },
+    onVolumeInput: () => { if (settingVolumeValue) settingVolumeValue.textContent = `${settingVolume.value}%`; },
+    onShare: async () => {
+      const text = `记忆翻牌 | 难度 ${difficultyEl.options[difficultyEl.selectedIndex].text} | 用时 ${formatTime(elapsed)} | 步数 ${moves}`;
+      try {
+        if (navigator.share) await navigator.share({ title: "记忆翻牌成绩", text });
+        else if (navigator.clipboard) {
+          await navigator.clipboard.writeText(text);
+          alert("已复制到剪贴板");
+        } else {
+          alert(text);
+        }
+      } catch (_) { /* ignore */ }
+    },
+    onAchievementsOpen: () => { openAchievements(); },
+    onAchievementsClose: () => {
+      if (!achievementsModal) return;
+      achievementsModal.classList.add('hidden');
+      achievementsModal.classList.remove('flex');
+      if (achievementsNew) achievementsNew.classList.add('hidden');
+    },
+    onDailyOpen: () => {
+      if (dailyInfoEl) {
+        const date = todayStr();
+        const status = __RememberStorage__.isDailyDone(date, difficultyEl.value) ? '已完成' : '未完成';
+        dailyInfoEl.textContent = `今日 ${date} · 难度：${difficultyEl.options[difficultyEl.selectedIndex].text} · 状态：${status}`;
       }
-    } catch {}
-  });
-  achievementsBtn.addEventListener('click', () => { openAchievements(); });
-  achievementsClose.addEventListener('click', () => { if (!achievementsModal) return; achievementsModal.classList.add('hidden'); achievementsModal.classList.remove('flex'); achievementsNew?.classList.add('hidden'); });
-  if (dailyBtn) dailyBtn.addEventListener('click', () => {
-    if (dailyInfoEl) {
-      const date = todayStr();
-      const status = __RememberStorage__.isDailyDone(date, difficultyEl.value) ? '已完成' : '未完成';
-      dailyInfoEl.textContent = `今日 ${date} · 难度：${difficultyEl.options[difficultyEl.selectedIndex].text} · 状态：${status}`;
-    }
-    if (dailyModal) { dailyModal.classList.remove('hidden'); dailyModal.classList.add('flex'); }
-  });
-  if (dailyCloseBtn) dailyCloseBtn.addEventListener('click', () => { if (dailyModal) { dailyModal.classList.add('hidden'); dailyModal.classList.remove('flex'); } });
-  if (dailyStartBtn) dailyStartBtn.addEventListener('click', () => {
-    dailyActive = true;
-    dailySeed = seedFromDate(todayStr(), difficultyEl.value, settings.cardFace || 'emoji');
-    if (dailyModal) { dailyModal.classList.add('hidden'); dailyModal.classList.remove('flex'); }
-    showToast('已开启今日挑战');
-    initGame(difficultyEl.value);
-  });
-  if (statsBtn) statsBtn.addEventListener('click', openStats);
-  if (statsClose) statsClose.addEventListener('click', closeStats);
-  if (nbackBtn) nbackBtn.addEventListener('click', () => { if (nbackModal) { nbackModal.classList.remove('hidden'); nbackModal.classList.add('flex'); } });
-  if (nbackCloseBtn) nbackCloseBtn.addEventListener('click', () => { if (!nbackModal) return; if (nbackRunning) stopNBack(); nbackModal.classList.add('hidden'); nbackModal.classList.remove('flex'); });
-  if (nbackStartBtn) nbackStartBtn.addEventListener('click', () => { if (nbackRunning) stopNBack(); else startNBack(); });
-  if (resetDataBtn) resetDataBtn.addEventListener('click', () => {
-    if (!confirm('确定清空本地所有成绩与设置吗？该操作不可恢复。')) return;
-    const keys = __RememberStorage__.listAllKeys();
-    __RememberStorage__.removeKeysByPrefix(keys, 'memory_match_');
-    // 也清理 best_* 兼容旧键（若存在）
-    __RememberStorage__.removeKeysByPrefix(keys, 'memory_match_best_');
-    location.reload();
-  });
-  exportBtn.addEventListener('click', exportData);
-  importBtn.addEventListener('click', () => importFile && importFile.click());
-  importFile.addEventListener('change', async () => {
-    const f = importFile.files && importFile.files[0];
-    if (!f) return;
-    try {
-      const text = await f.text();
-      const obj = JSON.parse(text);
-      importDataFromObj(obj);
-      showToast('导入成功');
-    } catch { showToast('导入失败'); }
-    finally { importFile.value = ''; }
-  });
-  document.addEventListener("keydown", handleKeyDown);
-  if (recallSkipBtn) recallSkipBtn.addEventListener('click', () => { if (recallModal) { recallModal.classList.add('hidden'); recallModal.classList.remove('flex'); } });
-  if (recallSubmitBtn) recallSubmitBtn.addEventListener('click', submitRecallTest);
+      if (dailyModal) {
+        dailyModal.classList.remove('hidden');
+        dailyModal.classList.add('flex');
+      }
+    },
+    onDailyClose: () => {
+      if (dailyModal) {
+        dailyModal.classList.add('hidden');
+        dailyModal.classList.remove('flex');
+      }
+    },
+    onDailyStart: () => {
+      dailyActive = true;
+      dailySeed = seedFromDate(todayStr(), difficultyEl.value, settings.cardFace || 'emoji');
+      if (dailyModal) {
+        dailyModal.classList.add('hidden');
+        dailyModal.classList.remove('flex');
+      }
+      showToast('已开启今日挑战');
+      initGame(difficultyEl.value);
+    },
+    onStatsOpen: openStats,
+    onStatsClose: closeStats,
+    onNbackOpen: () => {
+      if (nbackModal) {
+        nbackModal.classList.remove('hidden');
+        nbackModal.classList.add('flex');
+      }
+    },
+    onNbackClose: () => {
+      if (!nbackModal) return;
+      if (nbackRunning) stopNBack();
+      nbackModal.classList.add('hidden');
+      nbackModal.classList.remove('flex');
+    },
+    onNbackToggle: () => {
+      if (nbackRunning) stopNBack();
+      else startNBack();
+    },
+    onResetData: () => {
+      if (!confirm('确定清空本地所有成绩与设置吗？该操作不可恢复。')) return;
+      const keys = __RememberStorage__.listAllKeys();
+      __RememberStorage__.removeKeysByPrefix(keys, 'memory_match_');
+      __RememberStorage__.removeKeysByPrefix(keys, 'memory_match_best_');
+      location.reload();
+    },
+    onExport: exportData,
+    onImportClick: () => { if (importFile) importFile.click(); },
+    onImportFileChange: async () => {
+      const f = importFile && importFile.files && importFile.files[0];
+      if (!f) return;
+      try {
+        const text = await f.text();
+        const obj = JSON.parse(text);
+        importDataFromObj(obj);
+        showToast('导入成功');
+      } catch (_) {
+        showToast('导入失败');
+      } finally {
+        if (importFile) importFile.value = '';
+      }
+    },
+    onRecallSkip: () => {
+      if (recallModal) {
+        recallModal.classList.add('hidden');
+        recallModal.classList.remove('flex');
+      }
+    },
+    onRecallSubmit: submitRecallTest,
+    onKeyDown: handleKeyDown,
+  };
+
+  __RememberUIEvents__.bind(ui, events, document);
 
   settings = loadSettings();
   applyAccentToDOM();
